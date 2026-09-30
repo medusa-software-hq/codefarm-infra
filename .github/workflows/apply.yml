@@ -1,0 +1,70 @@
+name: Apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - infra/**
+      - .github/actions/**
+      - .github/workflows/apply.yml
+  workflow_dispatch:
+
+concurrency:
+  group: apply
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  NO_COLOR: 1
+
+jobs:
+  apply-base:
+    name: Apply base
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/pulumi
+        with:
+          command: up
+          program: base
+          stack: main
+          backend-url: gs://codefarm-base-state-39b22f38
+          service-account: base-provisioner@codefarm-x-07da3c.iam.gserviceaccount.com
+
+  apply-staging:
+    name: Apply staging
+    needs: apply-base
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/pulumi
+        with:
+          command: up
+          program: app
+          stack: staging
+          backend-url: gs://codefarm-app-staging-state-467db353
+          service-account: app-provisioner@codefarm-s-c20d22.iam.gserviceaccount.com
+
+  apply-production:
+    name: Apply production
+    needs: apply-staging
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/pulumi
+        with:
+          command: up
+          program: app
+          stack: production
+          backend-url: gs://codefarm-app-production-state-050c18a3
+          service-account: app-provisioner@codefarm-p-3d2dea.iam.gserviceaccount.com
