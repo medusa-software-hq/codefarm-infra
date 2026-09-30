@@ -1,0 +1,38 @@
+name: Check infra
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  NO_COLOR: 1
+
+jobs:
+  check-infra:
+    name: Check Pulumi programs
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: infra
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: infra/.nvmrc
+
+      - name: Install dependencies
+        run: corepack yarn install --immutable
+
+      - name: Check formatting
+        run: corepack yarn oxfmt --check "**/*.ts"
+
+      - name: Lint
+        run: corepack yarn oxlint --type-aware
+
+      - name: Type check
+        run: corepack yarn tsc --noEmit
