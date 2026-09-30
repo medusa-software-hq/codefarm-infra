@@ -1,7 +1,6 @@
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
 import { allowRunsInEnvironment, codefarmInfraRepository } from './githubPool.ts';
-import { imported } from './imported.ts';
 import { primaryLocation, reader } from './project.ts';
 import { pulumiStateBucket } from './utils/pulumiStateBucket.ts';
 
@@ -26,9 +25,6 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     { project: projectId, accountId: 'app-provisioner', displayName: 'App provisioner' },
     {
       provider,
-      ...imported(
-        `projects/${projectId}/serviceAccounts/app-provisioner@${projectId}.iam.gserviceaccount.com`,
-      ),
     },
   );
 
@@ -37,7 +33,7 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
   new gcp.projects.IAMMember(
     `${name}-app-provisioner-owner`,
     { project: projectId, role: 'roles/owner', member: appProvisionerMember },
-    { provider, ...imported(`${projectId} roles/owner ${appProvisionerMember}`) },
+    { provider },
   );
 
   allowRunsInEnvironment(
@@ -53,55 +49,50 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     projectId,
     appStateBucket,
     primaryLocation,
-    { provider, ...imported(`${projectId}/${appStateBucket}`) },
+    { provider },
   );
 
   new gcp.storage.BucketIAMMember(
     `${name}-reader-app-state`,
     { bucket: appStateBucketResource.name, role: 'roles/storage.objectViewer', member: reader },
-    { provider, ...imported(`b/${appStateBucket} roles/storage.objectViewer ${reader}`) },
+    { provider },
   );
 
   new gcp.projects.IAMMember(
     `${name}-reader-viewer`,
     { project: projectId, role: 'roles/viewer', member: reader },
-    { provider, ...imported(`${projectId} roles/viewer ${reader}`) },
+    { provider },
   );
 
   const kmsApi = new gcp.projects.Service(
     `${name}-kms-api`,
     { project: projectId, service: 'cloudkms.googleapis.com', disableOnDestroy: false },
-    { provider, ...imported(`${projectId}/cloudkms.googleapis.com`) },
+    { provider },
   );
-
-  const keyRingId = `projects/${projectId}/locations/${primaryLocation}/keyRings/pulumi`;
 
   // Key rings and keys can't be deleted; losing the key would make the secrets unreadable
   const keyRing = new gcp.kms.KeyRing(
     `${name}-pulumi-key-ring`,
     { project: projectId, name: 'pulumi', location: primaryLocation },
-    { provider, dependsOn: [kmsApi], protect: true, ...imported(keyRingId) },
+    { provider, dependsOn: [kmsApi], protect: true },
   );
 
   /** Encrypts the data keys of the stacks that keep secrets, like the app's credentials. */
   const secretsKey = new gcp.kms.CryptoKey(
     `${name}-pulumi-secrets-key`,
     { keyRing: keyRing.id, name: 'secrets' },
-    { provider, protect: true, ...imported(`${keyRingId}/cryptoKeys/secrets`) },
+    { provider, protect: true },
   );
 
   new gcp.kms.CryptoKeyIAMMember(
     `${name}-app-provisioner-secrets-key`,
     {
       cryptoKeyId: secretsKey.id,
-      role: 'roles/cloudkms.cryptoKeyEncrypterDecrypter',
+      role: 'roles/cloudkms.cryptoKeyDecrypter',
       member: appProvisionerMember,
     },
     {
       provider,
-      ...imported(
-        `${keyRingId}/cryptoKeys/secrets roles/cloudkms.cryptoKeyEncrypterDecrypter ${appProvisionerMember}`,
-      ),
     },
   );
 
