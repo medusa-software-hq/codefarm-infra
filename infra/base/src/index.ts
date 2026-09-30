@@ -6,12 +6,6 @@ export const githubActionsProviderName = githubActionsProvider.name;
 
 export const serviceAccounts = {
   imageBuilder: imageBuilder.email,
-  staging: {
-    appProvisioner: staging.appProvisioner.email,
-    dataKeyGenerator: staging.dataKeyGenerator.email,
-  },
-  production: {
-    appProvisioner: production.appProvisioner.email,
-    dataKeyGenerator: production.dataKeyGenerator.email,
-  },
+  staging: { appProvisioner: staging.appProvisioner.email },
+  production: { appProvisioner: production.appProvisioner.email },
 };
