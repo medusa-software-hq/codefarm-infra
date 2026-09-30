@@ -1,3 +1,10 @@
 encryptionsalt: v1:lJircFDPkew=:v1:4I0bAUahB5Azh0Ft:vf45Yb8JS+LV87dzr3Wtsnk9y3Pb3Q==
 config:
   gcp:project: codefarm-x-07da3c
+  base:environments:
+    staging:
+      projectId: codefarm-s-c20d22
+      appStateBucket: codefarm-app-staging-state-467db353
+    production:
+      projectId: codefarm-p-3d2dea
+      appStateBucket: codefarm-app-production-state-050c18a3

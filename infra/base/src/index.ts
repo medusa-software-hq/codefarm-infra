@@ -1,6 +1,17 @@
-import * as gcp from '@pulumi/gcp';
+import { production, staging } from './environments.ts';
+import { githubActionsProvider } from './githubPool.ts';
+import { imageBuilder } from './project.ts';
 
-/** The project this stack manages, as configured for the stack. */
-const project = gcp.organizations.getProjectOutput({});
+export const githubActionsProviderName = githubActionsProvider.name;
 
-export const projectNumber = project.number;
+export const serviceAccounts = {
+  imageBuilder: imageBuilder.email,
+  staging: {
+    appProvisioner: staging.appProvisioner.email,
+    dataKeyGenerator: staging.dataKeyGenerator.email,
+  },
+  production: {
+    appProvisioner: production.appProvisioner.email,
+    dataKeyGenerator: production.dataKeyGenerator.email,
+  },
+};

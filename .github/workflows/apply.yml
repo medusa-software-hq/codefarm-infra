@@ -18,6 +18,9 @@ permissions:
 
 env:
   NO_COLOR: 1
+  # The root project's pool trusts the identities the foundation gave Codefarm; Codefarm's pool, the rest
+  ROOT_POOL_PROVIDER: projects/626887270411/locations/global/workloadIdentityPools/github/providers/github-actions
+  CODEFARM_POOL_PROVIDER: projects/76431914348/locations/global/workloadIdentityPools/github/providers/github-actions
 
 jobs:
   apply-base:
@@ -33,6 +36,7 @@ jobs:
           program: base
           stack: main
           backend-url: gs://codefarm-base-state-39b22f38
+          identity-provider: ${{ env.ROOT_POOL_PROVIDER }}
           service-account: base-provisioner@codefarm-x-07da3c.iam.gserviceaccount.com
 
   apply-staging:
@@ -50,6 +54,7 @@ jobs:
           program: app
           stack: staging
           backend-url: gs://codefarm-app-staging-state-467db353
+          identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
           service-account: app-provisioner@codefarm-s-c20d22.iam.gserviceaccount.com
 
   apply-production:
@@ -67,4 +72,5 @@ jobs:
           program: app
           stack: production
           backend-url: gs://codefarm-app-production-state-050c18a3
+          identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
           service-account: app-provisioner@codefarm-p-3d2dea.iam.gserviceaccount.com
