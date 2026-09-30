@@ -1,8 +1,10 @@
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
 import { allowRunsInEnvironment, codefarmInfraRepository } from './githubPool.ts';
-import { primaryLocation, reader } from './project.ts';
+import { primaryLocation, projectId as baseProjectId, reader } from './project.ts';
+import { organizationAdmins, secretManagerApi, secretsRotatorMember } from './secrets.ts';
 import { pulumiStateBucket } from './utils/pulumiStateBucket.ts';
+import { secret } from './utils/secret.ts';
 
 /** One of Codefarm's environments, as configured for this stack. */
 interface EnvironmentConfig {
@@ -10,7 +12,7 @@ interface EnvironmentConfig {
   readonly appStateBucket: string;
 }
 
-/** Declares what an environment's project holds besides the app itself. */
+/** Declares what an environment needs besides the app itself. */
 function codefarmEnvironment(name: string, { projectId, appStateBucket }: EnvironmentConfig) {
   // Counts requests against the environment's project, rather than the base project
   const provider = new gcp.Provider(name, {
@@ -64,7 +66,63 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     { provider },
   );
 
-  return { provider, appProvisioner };
+  // The minter token is this stack's input, so it's kept in the base project
+  const minterToken = secret(
+    `cloudflare-${name}-minter-token`,
+    baseProjectId,
+    `cloudflare-${name}-minter-token`,
+    primaryLocation,
+    { dependsOn: [secretManagerApi] },
+  );
+
+  new gcp.secretmanager.SecretIamMember(`cloudflare-${name}-minter-token-admins`, {
+    secretId: minterToken.id,
+    role: 'roles/secretmanager.secretVersionAdder',
+    member: organizationAdmins,
+  });
+
+  new gcp.secretmanager.SecretIamMember(`cloudflare-${name}-minter-token-rotator`, {
+    secretId: minterToken.id,
+    role: 'roles/secretmanager.secretAccessor',
+    member: secretsRotatorMember,
+  });
+
+  const environmentSecretManagerApi = new gcp.projects.Service(
+    `${name}-secret-manager-api`,
+    { project: projectId, service: 'secretmanager.googleapis.com', disableOnDestroy: false },
+    { provider },
+  );
+
+  /** Lets the app stack manage the environment's Workers; kept here, like the app's other inputs. */
+  const appProvisionerToken = secret(
+    `${name}-cloudflare-app-provisioner-token`,
+    projectId,
+    'cloudflare-app-provisioner-token',
+    primaryLocation,
+    { provider, dependsOn: [environmentSecretManagerApi] },
+  );
+
+  new gcp.secretmanager.SecretIamMember(
+    `${name}-cloudflare-app-provisioner-token-rotator`,
+    {
+      secretId: appProvisionerToken.id,
+      role: 'roles/secretmanager.secretVersionManager',
+      member: secretsRotatorMember,
+    },
+    { provider },
+  );
+
+  new gcp.secretmanager.SecretIamMember(
+    `${name}-cloudflare-app-provisioner-token-app-provisioner`,
+    {
+      secretId: appProvisionerToken.id,
+      role: 'roles/secretmanager.secretAccessor',
+      member: pulumi.interpolate`serviceAccount:${appProvisioner.email}`,
+    },
+    { provider },
+  );
+
+  return { appProvisioner };
 }
 
 const environments = new pulumi.Config().requireObject<{
