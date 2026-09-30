@@ -48,7 +48,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/pulumi
+      - name: Apply the app's credentials
+        uses: ./.github/actions/pulumi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_MINTER_TOKEN }}
+        with:
+          command: up
+          program: app-credentials
+          stack: staging
+          backend-url: gs://codefarm-app-staging-state-467db353
+          identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
+          service-account: app-provisioner@codefarm-s-c20d22.iam.gserviceaccount.com
+
+      - name: Apply the app
+        uses: ./.github/actions/pulumi
         with:
           command: up
           program: app
@@ -66,7 +79,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/pulumi
+      - name: Apply the app's credentials
+        uses: ./.github/actions/pulumi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_MINTER_TOKEN }}
+        with:
+          command: up
+          program: app-credentials
+          stack: production
+          backend-url: gs://codefarm-app-production-state-050c18a3
+          identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
+          service-account: app-provisioner@codefarm-p-3d2dea.iam.gserviceaccount.com
+
+      - name: Apply the app
+        uses: ./.github/actions/pulumi
         with:
           command: up
           program: app

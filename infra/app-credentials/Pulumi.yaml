@@ -1,0 +1,8 @@
+name: app-credentials
+runtime:
+  name: nodejs
+  options:
+    packagemanager: yarn
+main: src/index.ts
+description: >-
+  The credentials the app uses in an environment, minted from the environment's own.

@@ -1,0 +1,5 @@
+secretsprovider: gcpkms://projects/codefarm-s-c20d22/locations/europe-central2/keyRings/pulumi/cryptoKeys/secrets
+encryptedkey: CiQA/Hp3JK3MwIkM4QDXr/LdAbel8TMJAojKSKYcVGCNmYZxiVISSQBhZUkVy4OdlTr1S4cml/evgZ0L5ahA7s1CJxHrJr1PcXu2qaT5XgEM/21SEY0b1PPyCYEKphtO8+ZQ5dDI97khxH4RbTzmYJs=
+config:
+  gcp:project: codefarm-s-c20d22
+  app-credentials:cloudflareAccountId: ae368f2f5d706c90fb13fca3270ae566

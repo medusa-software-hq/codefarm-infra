@@ -878,7 +878,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pulumi/gcp@npm:^9.0.0":
+"@pulumi/cloudflare@npm:^6.21.0":
+  version: 6.21.0
+  resolution: "@pulumi/cloudflare@npm:6.21.0"
+  dependencies:
+    "@pulumi/pulumi": "npm:^3.142.0"
+  checksum: 10c0/81a407a85b9cb5a684a717b970fe53937283fcb1d971abaff5117ede1e38aefe9aa864ccf6bfe1846d5ae4365094ad9be4ad7f8219945714023a895165b4e83f
+  languageName: node
+  linkType: hard
+
+"@pulumi/gcp@npm:^9.0.0, @pulumi/gcp@npm:^9.37.0":
   version: 9.37.0
   resolution: "@pulumi/gcp@npm:9.37.0"
   dependencies:
@@ -888,7 +897,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pulumi/pulumi@npm:^3.142.0, @pulumi/pulumi@npm:^3.150.0":
+"@pulumi/pulumi@npm:^3.142.0, @pulumi/pulumi@npm:^3.150.0, @pulumi/pulumi@npm:^3.265.0":
   version: 3.265.0
   resolution: "@pulumi/pulumi@npm:3.265.0"
   dependencies:
@@ -1173,6 +1182,16 @@ __metadata:
   checksum: 10c0/895a23929da416f2bd3de7e9cb4eabd340949328ab85ddd6e484a637d8f6820d485f53933446f5291c3b760cbc488beb8e88573dd0f9c7daf83dccc8fe81b041
   languageName: node
   linkType: hard
+
+"app-credentials@workspace:app-credentials":
+  version: 0.0.0-use.local
+  resolution: "app-credentials@workspace:app-credentials"
+  dependencies:
+    "@pulumi/cloudflare": "npm:^6.21.0"
+    "@pulumi/gcp": "npm:^9.37.0"
+    "@pulumi/pulumi": "npm:^3.265.0"
+  languageName: unknown
+  linkType: soft
 
 "app@workspace:app":
   version: 0.0.0-use.local
