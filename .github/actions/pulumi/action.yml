@@ -14,6 +14,9 @@ inputs:
   backend-url:
     description: The stack's state backend, e.g. gs://codefarm-app-staging-state-…
     required: true
+  identity-provider:
+    description: The workload identity provider that trusts the workflow's GitHub token
+    required: true
   service-account:
     description: The service account to act as
     required: true
@@ -36,7 +39,7 @@ runs:
     - name: Log in to GCP
       uses: google-github-actions/auth@v3
       with:
-        workload_identity_provider: projects/626887270411/locations/global/workloadIdentityPools/github/providers/github-actions
+        workload_identity_provider: ${{ inputs.identity-provider }}
         service_account: ${{ inputs.service-account }}
 
     - name: Run pulumi ${{ inputs.command }}
