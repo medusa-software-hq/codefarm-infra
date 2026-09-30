@@ -70,58 +70,20 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     { provider },
   );
 
-  // Key rings and keys can't be deleted; losing the key would make the secrets unreadable
+  // TODO: Remove; that destroys the key's versions and only forgets the ring
   const keyRing = new gcp.kms.KeyRing(
     `${name}-pulumi-key-ring`,
     { project: projectId, name: 'pulumi', location: primaryLocation },
-    { provider, dependsOn: [kmsApi], protect: true },
+    { provider, dependsOn: [kmsApi] },
   );
 
-  /** Encrypts the data keys of the stacks that keep secrets, like the app's credentials. */
-  const secretsKey = new gcp.kms.CryptoKey(
+  new gcp.kms.CryptoKey(
     `${name}-pulumi-secrets-key`,
     { keyRing: keyRing.id, name: 'secrets' },
-    { provider, protect: true },
-  );
-
-  new gcp.kms.CryptoKeyIAMMember(
-    `${name}-app-provisioner-secrets-key`,
-    {
-      cryptoKeyId: secretsKey.id,
-      role: 'roles/cloudkms.cryptoKeyDecrypter',
-      member: appProvisionerMember,
-    },
-    {
-      provider,
-    },
-  );
-
-  /** Generates the data keys that the secrets key encrypts; can't decrypt anything. */
-  const dataKeyGenerator = new gcp.serviceaccount.Account(
-    `${name}-data-key-generator`,
-    { project: projectId, accountId: 'data-key-generator', displayName: 'Data key generator' },
     { provider },
   );
 
-  new gcp.kms.CryptoKeyIAMMember(
-    `${name}-data-key-generator-secrets-key`,
-    {
-      cryptoKeyId: secretsKey.id,
-      role: 'roles/cloudkms.cryptoKeyEncrypter',
-      member: pulumi.interpolate`serviceAccount:${dataKeyGenerator.email}`,
-    },
-    { provider },
-  );
-
-  allowRunsInEnvironment(
-    `${name}-data-key-generator-github`,
-    dataKeyGenerator,
-    codefarmInfraRepository,
-    name,
-    { provider },
-  );
-
-  return { appProvisioner, dataKeyGenerator };
+  return { appProvisioner };
 }
 
 const environments = new pulumi.Config().requireObject<{
