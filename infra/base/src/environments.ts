@@ -64,25 +64,6 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     { provider },
   );
 
-  const kmsApi = new gcp.projects.Service(
-    `${name}-kms-api`,
-    { project: projectId, service: 'cloudkms.googleapis.com', disableOnDestroy: false },
-    { provider },
-  );
-
-  // TODO: Remove; that destroys the key's versions and only forgets the ring
-  const keyRing = new gcp.kms.KeyRing(
-    `${name}-pulumi-key-ring`,
-    { project: projectId, name: 'pulumi', location: primaryLocation },
-    { provider, dependsOn: [kmsApi] },
-  );
-
-  new gcp.kms.CryptoKey(
-    `${name}-pulumi-secrets-key`,
-    { keyRing: keyRing.id, name: 'secrets' },
-    { provider },
-  );
-
   return { appProvisioner };
 }
 
