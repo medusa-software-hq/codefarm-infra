@@ -1,0 +1,8 @@
+name: base
+runtime:
+  name: nodejs
+  options:
+    packagemanager: yarn
+main: src/index.ts
+description: >-
+  What Codefarm's environments share.
