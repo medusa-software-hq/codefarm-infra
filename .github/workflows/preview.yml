@@ -1,0 +1,62 @@
+name: Preview
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+env:
+  NO_COLOR: 1
+
+# No GitHub environments here: they'd change the token's subject from pull_request
+jobs:
+  preview-base:
+    name: Preview base
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/pulumi
+        with:
+          command: preview
+          program: base
+          stack: main
+          backend-url: gs://codefarm-base-state-39b22f38
+          service-account: reader@codefarm-x-07da3c.iam.gserviceaccount.com
+          comment-on-pr: true
+
+  preview-staging:
+    name: Preview staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/pulumi
+        with:
+          command: preview
+          program: app
+          stack: staging
+          backend-url: gs://codefarm-app-staging-state-467db353
+          service-account: reader@codefarm-x-07da3c.iam.gserviceaccount.com
+          comment-on-pr: true
+
+  preview-production:
+    name: Preview production
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/pulumi
+        with:
+          command: preview
+          program: app
+          stack: production
+          backend-url: gs://codefarm-app-production-state-050c18a3
+          service-account: reader@codefarm-x-07da3c.iam.gserviceaccount.com
+          comment-on-pr: true
