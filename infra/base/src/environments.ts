@@ -64,7 +64,7 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     { provider },
   );
 
-  return { appProvisioner };
+  return { provider, appProvisioner };
 }
 
 const environments = new pulumi.Config().requireObject<{
