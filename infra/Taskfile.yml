@@ -1,0 +1,39 @@
+version: '3'
+
+tasks:
+  install:
+    desc: Install the workspace's dependencies
+    run: once
+    sources:
+      - package.json
+      - '*/package.json'
+      - yarn.lock
+    generates:
+      - .yarn/install-state.gz
+    cmds:
+      - corepack yarn install --immutable
+
+  typecheck:
+    desc: Type check all packages
+    deps: [install]
+    cmds:
+      - corepack yarn tsc -p base --noEmit
+      - corepack yarn tsc -p app --noEmit
+
+  fixFormatting:
+    desc: Fix formatting in all packages
+    deps: [install]
+    cmds:
+      - corepack yarn oxfmt --write "**/*.ts"
+
+  lint:
+    desc: Lint all packages
+    deps: [install]
+    cmds:
+      - corepack yarn oxlint --type-aware
+
+  fixLint:
+    desc: Fix lint issues in all packages
+    deps: [install]
+    cmds:
+      - corepack yarn oxlint --type-aware --fix
