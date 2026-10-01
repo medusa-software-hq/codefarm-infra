@@ -47,14 +47,6 @@ const googleWorkspace = new cloudflare.ZeroTrustAccessIdentityProvider(
   { ignoreChanges: ['config.clientSecret'] },
 );
 
-/** Emails a code to the address being signed in, until the organization's Google sign-in works. */
-const oneTimePin = new cloudflare.ZeroTrustAccessIdentityProvider('one-time-pin', {
-  accountId: cloudflareAccountId,
-  name: 'One-time PIN',
-  type: 'onetimepin',
-  config: {},
-});
-
 /** Anyone in the organization, the same in every solution's accounts. */
 const organizationMembers = new cloudflare.ZeroTrustAccessPolicy('organization-members', {
   accountId: cloudflareAccountId,
@@ -69,9 +61,9 @@ const accessApplication = new cloudflare.ZeroTrustAccessApplication('app', {
   name: 'app',
   type: 'self_hosted',
   destinations: [{ type: 'public', uri: hostname }],
-  // Both, until Google sign-in is confirmed to work; then One-time PIN goes
-  allowedIdps: [googleWorkspace.id, oneTimePin.id],
-  autoRedirectToIdentity: false,
+  allowedIdps: [googleWorkspace.id],
+  // There is one way to sign in, so there is nothing to choose between
+  autoRedirectToIdentity: true,
   policies: [{ id: organizationMembers.id, precedence: 1 }],
 });
 
