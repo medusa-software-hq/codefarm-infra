@@ -17,6 +17,8 @@ env:
   NO_COLOR: 1
   # The root project's pool trusts the reader, which the foundation gave Codefarm
   ROOT_POOL_PROVIDER: projects/626887270411/locations/global/workloadIdentityPools/github/providers/github-actions
+  # Not a real token: previews compare with the state, without calling Cloudflare
+  CLOUDFLARE_API_TOKEN: preview-placeholder-not-a-real-token-000
 
 # No GitHub environments here: they'd change the token's subject from pull_request
 jobs:

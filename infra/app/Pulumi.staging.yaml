@@ -1,3 +1,4 @@
 encryptionsalt: v1:xT/LOXFBEuY=:v1:6xBs7vByfK3CmZyU:DFsprAs1YdCbbsOflH9WJiRl/EFk0g==
 config:
   gcp:project: codefarm-s-c20d22
+  app:cloudflareAccountId: ae368f2f5d706c90fb13fca3270ae566
