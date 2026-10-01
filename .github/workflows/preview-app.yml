@@ -1,7 +1,12 @@
-name: Preview
+name: Preview app
 
 on:
   pull_request:
+    paths:
+      - infra/*
+      - infra/app/**
+      - .github/actions/pulumi/**
+      - .github/workflows/preview-app.yml
 
 permissions:
   contents: read
@@ -15,23 +20,6 @@ env:
 
 # No GitHub environments here: they'd change the token's subject from pull_request
 jobs:
-  preview-base:
-    name: Preview base
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v7.0.1
-
-      - uses: ./.github/actions/pulumi
-        with:
-          command: preview
-          program: base
-          stack: main
-          backend-url: gs://codefarm-base-state-39b22f38
-          identity-provider: ${{ env.ROOT_POOL_PROVIDER }}
-          service-account: reader@codefarm-x-07da3c.iam.gserviceaccount.com
-          comment-on-pr: true
-
   preview-staging:
     name: Preview staging
     runs-on: ubuntu-latest
