@@ -11,6 +11,7 @@
       "node"
     ],
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "noEmit": true,
     "erasableSyntaxOnly": true
   }

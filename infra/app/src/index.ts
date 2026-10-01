@@ -1,8 +1,10 @@
 import * as cloudflare from '@pulumi/cloudflare';
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
-import { buildSync } from 'esbuild';
-import { fileURLToPath } from 'node:url';
+import artifacts from '../artifacts.json' with { type: 'json' };
+import { readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 /** The project this stack manages, as configured for the stack. */
 const project = gcp.organizations.getProjectOutput({});
@@ -67,24 +69,26 @@ const accessApplication = new cloudflare.ZeroTrustAccessApplication('app', {
   policies: [{ id: organizationMembers.id, precedence: 1 }],
 });
 
-/** The Worker's code, bundled here so that what's uploaded is what was just built. */
-function bundleWorker(): string {
-  const { outputFiles } = buildSync({
-    entryPoints: [fileURLToPath(new URL('../../worker/src/index.ts', import.meta.url))],
-    bundle: true,
-    format: 'esm',
-    platform: 'neutral',
-    target: 'es2022',
-    write: false,
+/**
+ * The app Worker's bundle, as `codefarm` built and uploaded it to the base project's registry.
+ * Pinned by its SHA-256, which is also its version there.
+ */
+const { sha256: appBundleSha256 } = artifacts.edgeApp;
+
+const appBundle = gcp.artifactregistry
+  .getFileOutput({
+    project: 'codefarm-x-07da3c',
+    location: 'europe-central2',
+    repositoryId: 'bundles',
+    fileId: `edge-app:${appBundleSha256}:worker.js`,
+    outputPath: join(tmpdir(), `edge-app-${appBundleSha256}.js`),
+  })
+  .apply(({ outputPath, outputSha256 }) => {
+    if (outputSha256 !== appBundleSha256) {
+      throw new Error(`The app bundle's SHA-256 is ${outputSha256}, not ${appBundleSha256}`);
+    }
+    return readFileSync(outputPath, 'utf8');
   });
-
-  const [output] = outputFiles;
-  if (output === undefined) {
-    throw new Error('Bundling the Worker produced no output');
-  }
-
-  return output.text;
-}
 
 /** Serves a placeholder page to those Access signed in, until Codefarm itself is deployed. */
 const worker = new cloudflare.WorkersScript('worker', {
@@ -92,7 +96,7 @@ const worker = new cloudflare.WorkersScript('worker', {
   // The account and the domain already name the environment
   scriptName: 'app',
   mainModule: 'worker.js',
-  content: bundleWorker(),
+  content: appBundle,
   compatibilityDate: '2026-10-01',
   bindings: [
     { name: 'ACCESS_ISSUER', type: 'plain_text', text: accessIssuer },
