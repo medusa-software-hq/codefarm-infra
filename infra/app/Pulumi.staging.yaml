@@ -2,3 +2,5 @@ encryptionsalt: v1:xT/LOXFBEuY=:v1:6xBs7vByfK3CmZyU:DFsprAs1YdCbbsOflH9WJiRl/EFk
 config:
   gcp:project: codefarm-s-c20d22
   app:cloudflareAccountId: ae368f2f5d706c90fb13fca3270ae566
+  app:domain: codefarm-staging.top
+  app:cloudflareZoneId: 5f9f3adf51f41e9ce6b1662eb87c9b24

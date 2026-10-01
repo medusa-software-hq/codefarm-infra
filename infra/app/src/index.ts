@@ -7,8 +7,15 @@ const project = gcp.organizations.getProjectOutput({});
 
 export const projectNumber = project.number;
 
+const config = new pulumi.Config();
+
 /** The environment's Cloudflare account. */
-const cloudflareAccountId = new pulumi.Config().require('cloudflareAccountId');
+const cloudflareAccountId = config.require('cloudflareAccountId');
+
+/** The environment's domain, whose zone is created by hand in the account. */
+const domain = config.require('domain');
+
+const cloudflareZoneId = config.require('cloudflareZoneId');
 
 const environment = pulumi.getStack();
 
@@ -17,7 +24,7 @@ const page = `<!doctype html><title>Codefarm</title><h1>Hello from Codefarm's ${
 /** Serves a placeholder page, until Codefarm itself is deployed. */
 const worker = new cloudflare.WorkersScript('worker', {
   accountId: cloudflareAccountId,
-  // The account's workers.dev subdomain already names the environment
+  // The account and the domain already name the environment
   scriptName: 'app',
   mainModule: 'worker.js',
   content: `export default {
@@ -29,12 +36,12 @@ const worker = new cloudflare.WorkersScript('worker', {
   compatibilityDate: '2026-10-01',
 });
 
-// Serves it at app.<account's subdomain>.workers.dev, until Codefarm has a domain
-new cloudflare.WorkersScriptSubdomain('worker', {
+// Serves it at app.<domain>; Cloudflare adds the DNS record and the certificate
+new cloudflare.WorkersCustomDomain('worker', {
   accountId: cloudflareAccountId,
-  scriptName: worker.scriptName,
-  enabled: true,
-  previewsEnabled: false,
+  zoneId: cloudflareZoneId,
+  hostname: `app.${domain}`,
+  service: worker.scriptName,
 });
 
 export const workerName = worker.scriptName;
