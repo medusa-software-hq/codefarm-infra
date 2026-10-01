@@ -1,0 +1,77 @@
+name: Sign-in secret
+description: >-
+  Gives an environment's Google login method the sign-in client's secret, which stays out of
+  Pulumi, logged in to GCP as the secrets rotator
+
+inputs:
+  environment:
+    description: The environment, e.g. staging
+    required: true
+  cloudflare-account:
+    description: The environment's Cloudflare account ID
+    required: true
+  identity-provider:
+    description: Codefarm's workload identity provider, which trusts the rotator on main
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Log in to GCP
+      uses: google-github-actions/auth@v3
+      with:
+        workload_identity_provider: ${{ inputs.identity-provider }}
+        service_account: secrets-rotator@codefarm-x-07da3c.iam.gserviceaccount.com
+
+    - name: Set the client secret
+      shell: bash
+      env:
+        ENVIRONMENT: ${{ inputs.environment }}
+        ACCOUNT: ${{ inputs.cloudflare-account }}
+        BASE_PROJECT: codefarm-x-07da3c
+        # Cloudflare's "Access: Organizations, Identity Providers, and Groups Write"
+        IDENTITY_PROVIDERS_WRITE: bfe0d8686a584fa680f4c53b5eb0de6d
+      run: |
+        cloudflare() {
+          local token=$1 path=$2
+          shift 2
+          curl --silent --show-error --fail-with-body \
+            --header "Authorization: Bearer $token" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT$path" "$@"
+        }
+        secret() { gcloud secrets versions access latest --secret="$1" --project="$BASE_PROJECT"; }
+
+        minter_token=$(secret "cloudflare-$ENVIRONMENT-minter-token")
+        echo "::add-mask::$minter_token"
+        CLIENT_SECRET=$(secret google-sign-in-client-secret)
+        echo "::add-mask::$CLIENT_SECRET"
+        export CLIENT_SECRET
+
+        # A token for this run only: deleted on exit, and expiring soon anyway
+        request=$(jq --null-input \
+          --arg expiresOn "$(date --utc --date='+15 minutes' +%Y-%m-%dT%H:%M:%SZ)" \
+          --arg group "$IDENTITY_PROVIDERS_WRITE" \
+          --arg account "com.cloudflare.api.account.$ACCOUNT" \
+          '{name: "sign-in-secret", expires_on: $expiresOn, policies: [
+            {effect: "allow", permission_groups: [{id: $group}], resources: {($account): "*"}}
+          ]}')
+        response=$(cloudflare "$minter_token" /tokens --json "$request")
+        token=$(jq --raw-output .result.value <<< "$response")
+        echo "::add-mask::$token"
+        token_id=$(jq --raw-output .result.id <<< "$response")
+        trap 'cloudflare "$minter_token" "/tokens/$token_id" --request DELETE > /dev/null' EXIT
+
+        # The one the app stack declares; an account has one login method of this type
+        provider=$(cloudflare "$token" /access/identity_providers \
+          | jq '.result[] | select(.type == "google-apps")')
+        provider_id=$(jq --raw-output '.id // empty' <<< "$provider")
+        if [[ -z $provider_id ]]; then
+          echo "The account has no Google login method" >&2
+          exit 1
+        fi
+
+        # Everything else as Pulumi set it; the callback address is Cloudflare's, read-only
+        request=$(jq '{name, type,
+          config: ((.config | del(.redirect_url)) + {client_secret: $ENV.CLIENT_SECRET})}' <<< "$provider")
+        cloudflare "$token" "/access/identity_providers/$provider_id" --request PUT --json "$request" \
+          > /dev/null

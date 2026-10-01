@@ -24,7 +24,30 @@ const accessIssuer = `https://${config.require('accessTeamDomain')}`;
 
 const hostname = `app.${domain}`;
 
-/** Emails a code to the address being signed in, until the organization's Google sign-in. */
+/** The organization's OAuth client, in its Platform project; the same in every solution. */
+const googleSignInClientId =
+  '841776326242-ck9jaudbgasel060a339gv1gn1o8gngk.apps.googleusercontent.com';
+
+/**
+ * Signs people in with their organization's Google account. Its client secret stays out of
+ * Pulumi: "Apply app" sets it right after each apply.
+ */
+const googleWorkspace = new cloudflare.ZeroTrustAccessIdentityProvider(
+  'google-workspace',
+  {
+    accountId: cloudflareAccountId,
+    name: 'Google Workspace',
+    type: 'google-apps',
+    config: {
+      appsDomain: 'medusa.software',
+      clientId: googleSignInClientId,
+      clientSecret: 'set-after-apply',
+    },
+  },
+  { ignoreChanges: ['config.clientSecret'] },
+);
+
+/** Emails a code to the address being signed in, until the organization's Google sign-in works. */
 const oneTimePin = new cloudflare.ZeroTrustAccessIdentityProvider('one-time-pin', {
   accountId: cloudflareAccountId,
   name: 'One-time PIN',
@@ -46,9 +69,9 @@ const accessApplication = new cloudflare.ZeroTrustAccessApplication('app', {
   name: 'app',
   type: 'self_hosted',
   destinations: [{ type: 'public', uri: hostname }],
-  allowedIdps: [oneTimePin.id],
-  // There is one way to sign in, so there is nothing to choose between
-  autoRedirectToIdentity: true,
+  // Both, until Google sign-in is confirmed to work; then One-time PIN goes
+  allowedIdps: [googleWorkspace.id, oneTimePin.id],
+  autoRedirectToIdentity: false,
   policies: [{ id: organizationMembers.id, precedence: 1 }],
 });
 
