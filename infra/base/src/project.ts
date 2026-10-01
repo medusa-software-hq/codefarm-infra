@@ -11,10 +11,10 @@ export const primaryLocation = 'europe-central2';
 /** The foundation's read-only identity, which previews Codefarm's stacks. */
 export const reader = `serviceAccount:reader@${projectId}.iam.gserviceaccount.com`;
 
-/** Pushes the images built from the application code. */
-export const imageBuilder = new gcp.serviceaccount.Account('image-builder', {
-  accountId: 'image-builder',
-  displayName: 'Image builder',
+/** Uploads what `codefarm` builds from the application code: images and Worker bundles. */
+export const artifactBuilder = new gcp.serviceaccount.Account('artifact-builder', {
+  accountId: 'artifact-builder',
+  displayName: 'Artifact builder',
 });
 
-allowRunsOnBranch('image-builder-github', imageBuilder, codefarmRepository, 'main');
+allowRunsOnBranch('artifact-builder-github', artifactBuilder, codefarmRepository, 'main');
