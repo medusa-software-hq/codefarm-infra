@@ -39,6 +39,7 @@ jobs:
           backend-url: gs://codefarm-app-staging-state-467db353
           identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
           service-account: app-provisioner@codefarm-s-c20d22.iam.gserviceaccount.com
+          cloudflare-api-token-secret: projects/codefarm-s-c20d22/secrets/cloudflare-app-provisioner-token
 
   apply-production:
     name: Apply production
@@ -57,3 +58,4 @@ jobs:
           backend-url: gs://codefarm-app-production-state-050c18a3
           identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
           service-account: app-provisioner@codefarm-p-3d2dea.iam.gserviceaccount.com
+          cloudflare-api-token-secret: projects/codefarm-p-3d2dea/secrets/cloudflare-app-provisioner-token
