@@ -4,3 +4,4 @@ config:
   app:cloudflareAccountId: 33a38acf2f1943aef0bd5e459903e688
   app:domain: codefarm.cloud
   app:cloudflareZoneId: fa1070a01a1f7dd6823e29fa94118a66
+  app:accessTeamDomain: codefarm-production-195f.cloudflareaccess.com
