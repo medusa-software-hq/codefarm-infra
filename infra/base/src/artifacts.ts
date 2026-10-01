@@ -1,6 +1,6 @@
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
-import { imageBuilder, primaryLocation, reader } from './project.ts';
+import { artifactBuilder, primaryLocation, reader } from './project.ts';
 
 // What `codefarm` builds, which the app stack references by content: images by digest, bundles by
 // their SHA-256 as the version
@@ -58,9 +58,9 @@ export function allowArtifactReads(
 }
 
 allow(
-  'image-builder',
+  'artifact-builder',
   'roles/artifactregistry.writer',
-  pulumi.interpolate`serviceAccount:${imageBuilder.email}`,
+  pulumi.interpolate`serviceAccount:${artifactBuilder.email}`,
 );
 
 allowArtifactReads('reader', reader);
