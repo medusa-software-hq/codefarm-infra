@@ -1,5 +1,6 @@
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
+import { allowArtifactReads } from './artifacts.ts';
 import { allowRunsInEnvironment, codefarmInfraRepository } from './githubPool.ts';
 import { primaryLocation, projectId as baseProjectId, reader } from './project.ts';
 import { secretsRotatorMember } from './secrets.ts';
@@ -106,6 +107,19 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
       member: pulumi.interpolate`serviceAccount:${appProvisioner.email}`,
     },
     { provider },
+  );
+
+  // Lets the app stack's requests to the base project's registry count against this project
+  new gcp.projects.Service(
+    `${name}-artifact-registry-api`,
+    { project: projectId, service: 'artifactregistry.googleapis.com', disableOnDestroy: false },
+    { provider },
+  );
+
+  // The app stack deploys what `codefarm` built, as pinned in its code
+  allowArtifactReads(
+    `${name}-app-provisioner`,
+    pulumi.interpolate`serviceAccount:${appProvisioner.email}`,
   );
 
   return { appProvisioner };
