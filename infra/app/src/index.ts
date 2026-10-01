@@ -17,8 +17,8 @@ const page = `<!doctype html><title>Codefarm</title><h1>Hello from Codefarm's ${
 /** Serves a placeholder page, until Codefarm itself is deployed. */
 const worker = new cloudflare.WorkersScript('worker', {
   accountId: cloudflareAccountId,
-  // Named after the environment, so the two accounts' dashboards can't be mistaken for each other
-  scriptName: `codefarm-${environment}`,
+  // The account's workers.dev subdomain already names the environment
+  scriptName: 'app',
   mainModule: 'worker.js',
   content: `export default {
   fetch: () => new Response(${JSON.stringify(page)}, {
@@ -29,7 +29,7 @@ const worker = new cloudflare.WorkersScript('worker', {
   compatibilityDate: '2026-10-01',
 });
 
-// Serves it at <script>.<account's subdomain>.workers.dev, until Codefarm has a domain
+// Serves it at app.<account's subdomain>.workers.dev, until Codefarm has a domain
 new cloudflare.WorkersScriptSubdomain('worker', {
   accountId: cloudflareAccountId,
   scriptName: worker.scriptName,
