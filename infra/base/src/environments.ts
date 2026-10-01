@@ -1,8 +1,8 @@
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
 import { allowRunsInEnvironment, codefarmInfraRepository } from './githubPool.ts';
-import { primaryLocation, projectId as baseProjectId, reader } from './project.ts';
-import { organizationAdmins, secretManagerApi, secretsRotatorMember } from './secrets.ts';
+import { primaryLocation, reader } from './project.ts';
+import { secretsRotatorMember } from './secrets.ts';
 import { pulumiStateBucket } from './utils/pulumiStateBucket.ts';
 import { secret } from './utils/secret.ts';
 
@@ -66,28 +66,7 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     { provider },
   );
 
-  // The minter token is this stack's input, so it's kept in the base project
-  const minterToken = secret(
-    `cloudflare-${name}-minter-token`,
-    baseProjectId,
-    `cloudflare-${name}-minter-token`,
-    primaryLocation,
-    { dependsOn: [secretManagerApi] },
-  );
-
-  new gcp.secretmanager.SecretIamMember(`cloudflare-${name}-minter-token-admins`, {
-    secretId: minterToken.id,
-    role: 'roles/secretmanager.secretVersionAdder',
-    member: organizationAdmins,
-  });
-
-  new gcp.secretmanager.SecretIamMember(`cloudflare-${name}-minter-token-rotator`, {
-    secretId: minterToken.id,
-    role: 'roles/secretmanager.secretAccessor',
-    member: secretsRotatorMember,
-  });
-
-  const environmentSecretManagerApi = new gcp.projects.Service(
+  const secretManagerApi = new gcp.projects.Service(
     `${name}-secret-manager-api`,
     { project: projectId, service: 'secretmanager.googleapis.com', disableOnDestroy: false },
     { provider },
@@ -99,7 +78,7 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     projectId,
     'cloudflare-app-provisioner-token',
     primaryLocation,
-    { provider, dependsOn: [environmentSecretManagerApi] },
+    { provider, dependsOn: [secretManagerApi] },
   );
 
   new gcp.secretmanager.SecretIamMember(
