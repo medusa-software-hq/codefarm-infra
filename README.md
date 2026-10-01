@@ -8,8 +8,8 @@ Changes are proposed as pull requests, previewed there, and applied after mergin
 
 From scratch, each step needs the previous one:
 
-1. The foundation creates Codefarm's projects and the containers for the Cloudflare minter tokens.
-2. An admin adds the minter tokens, and sets up each Cloudflare account: its zone, and Zero Trust with its team domain. The app stack's config refers to both.
+1. The foundation creates Codefarm's projects, and the containers for the Cloudflare minter tokens and the Google sign-in client's secret.
+2. An admin adds the minter tokens and the sign-in client's secret, and sets up each Cloudflare account: its zone, and Zero Trust with its team domain. The app stack's config refers to both, and the team domain is added to the sign-in client in the foundation's Platform project.
 3. `base` is applied.
 4. "Rotate app secrets" runs.
 5. `app` is applied.

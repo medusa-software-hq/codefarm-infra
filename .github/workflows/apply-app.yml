@@ -8,6 +8,7 @@ on:
       - infra/app/**
       - infra/worker/**
       - .github/actions/pulumi/**
+      - .github/actions/sign-in-secret/**
       - .github/workflows/apply-app.yml
   workflow_dispatch:
 
@@ -42,6 +43,21 @@ jobs:
           service-account: app-provisioner@codefarm-s-c20d22.iam.gserviceaccount.com
           cloudflare-api-token-secret: projects/codefarm-s-c20d22/secrets/cloudflare-app-provisioner-token
 
+  # Outside the GitHub environment: the rotator is trusted on main only, unlike the app jobs
+  sign-in-secret-staging:
+    name: Set staging's sign-in secret
+    needs: apply-staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/sign-in-secret
+        with:
+          environment: staging
+          cloudflare-account: ae368f2f5d706c90fb13fca3270ae566
+          identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
+
   apply-production:
     name: Apply production
     needs: apply-staging
@@ -60,3 +76,18 @@ jobs:
           identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
           service-account: app-provisioner@codefarm-p-3d2dea.iam.gserviceaccount.com
           cloudflare-api-token-secret: projects/codefarm-p-3d2dea/secrets/cloudflare-app-provisioner-token
+
+  # Outside the GitHub environment: the rotator is trusted on main only, unlike the app jobs
+  sign-in-secret-production:
+    name: Set production's sign-in secret
+    needs: apply-production
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/sign-in-secret
+        with:
+          environment: production
+          cloudflare-account: 33a38acf2f1943aef0bd5e459903e688
+          identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
