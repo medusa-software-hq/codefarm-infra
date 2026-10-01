@@ -6,6 +6,7 @@ on:
     paths:
       - infra/*
       - infra/app/**
+      - infra/worker/**
       - .github/actions/pulumi/**
       - .github/workflows/apply-app.yml
   workflow_dispatch:
