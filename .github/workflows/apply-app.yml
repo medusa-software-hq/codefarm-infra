@@ -1,16 +1,17 @@
-name: Apply
+name: Apply app
 
 on:
   push:
     branches: [main]
     paths:
-      - infra/**
-      - .github/actions/**
-      - .github/workflows/apply.yml
+      - infra/*
+      - infra/app/**
+      - .github/actions/pulumi/**
+      - .github/workflows/apply-app.yml
   workflow_dispatch:
 
 concurrency:
-  group: apply
+  group: apply-app
 
 permissions:
   contents: read
@@ -18,30 +19,12 @@ permissions:
 
 env:
   NO_COLOR: 1
-  # The root project's pool trusts the identities the foundation gave Codefarm; Codefarm's pool, the rest
-  ROOT_POOL_PROVIDER: projects/626887270411/locations/global/workloadIdentityPools/github/providers/github-actions
+  # Codefarm's pool, which the base stack manages
   CODEFARM_POOL_PROVIDER: projects/76431914348/locations/global/workloadIdentityPools/github/providers/github-actions
 
 jobs:
-  apply-base:
-    name: Apply base
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v7.0.1
-
-      - uses: ./.github/actions/pulumi
-        with:
-          command: up
-          program: base
-          stack: main
-          backend-url: gs://codefarm-base-state-39b22f38
-          identity-provider: ${{ env.ROOT_POOL_PROVIDER }}
-          service-account: base-provisioner@codefarm-x-07da3c.iam.gserviceaccount.com
-
   apply-staging:
     name: Apply staging
-    needs: apply-base
     runs-on: ubuntu-latest
     environment: staging
 
