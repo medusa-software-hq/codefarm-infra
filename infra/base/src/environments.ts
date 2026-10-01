@@ -1,7 +1,7 @@
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
 import { allowRunsInEnvironment, codefarmInfraRepository } from './githubPool.ts';
-import { primaryLocation, reader } from './project.ts';
+import { primaryLocation, projectId as baseProjectId, reader } from './project.ts';
 import { secretsRotatorMember } from './secrets.ts';
 import { pulumiStateBucket } from './utils/pulumiStateBucket.ts';
 import { secret } from './utils/secret.ts';
@@ -65,6 +65,13 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     { project: projectId, role: 'roles/viewer', member: reader },
     { provider },
   );
+
+  // The foundation keeps the environment's Cloudflare minter token in the base project
+  new gcp.secretmanager.SecretIamMember(`cloudflare-${name}-minter-token-rotator`, {
+    secretId: `projects/${baseProjectId}/secrets/cloudflare-${name}-minter-token`,
+    role: 'roles/secretmanager.secretAccessor',
+    member: secretsRotatorMember,
+  });
 
   const secretManagerApi = new gcp.projects.Service(
     `${name}-secret-manager-api`,
