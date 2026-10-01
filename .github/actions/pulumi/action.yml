@@ -24,7 +24,9 @@ inputs:
     description: Whether to post the result as a pull request comment
     default: "false"
   cloudflare-api-token-secret:
-    description: The Secret Manager secret holding the Cloudflare API token, if the stack needs one
+    description: >-
+      The Secret Manager secret holding the Cloudflare API token;
+      without it, a placeholder, which is enough for previews
     default: ""
 
 runs:
@@ -57,8 +59,7 @@ runs:
       env:
         # The state holds no secrets
         PULUMI_CONFIG_PASSPHRASE: ""
-        # Without a secret, whatever the caller set, like the previews' placeholder
-        CLOUDFLARE_API_TOKEN: ${{ steps.cloudflare.outputs.api-token || env.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_API_TOKEN: ${{ steps.cloudflare.outputs.api-token || 'cfat_placeholder' }}
       with:
         command: ${{ inputs.command }}
         stack-name: ${{ inputs.stack }}
