@@ -6,7 +6,6 @@ on:
     paths:
       - infra/*
       - infra/app/**
-      - infra/worker/**
       - .github/actions/pulumi/**
       - .github/actions/sign-in-secret/**
       - .github/workflows/apply-app.yml

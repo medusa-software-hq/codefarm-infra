@@ -4,8 +4,7 @@
   "type": "module",
   "workspaces": [
     "base",
-    "app",
-    "worker"
+    "app"
   ],
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.8",
