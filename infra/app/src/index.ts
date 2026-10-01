@@ -54,6 +54,14 @@ new cloudflare.WorkersCustomDomain('worker', {
   service: worker.scriptName,
 });
 
+/** Emails a code to the address being signed in, until the organization's Google sign-in. */
+const oneTimePin = new cloudflare.ZeroTrustAccessIdentityProvider('one-time-pin', {
+  accountId: cloudflareAccountId,
+  name: 'One-time PIN',
+  type: 'onetimepin',
+  config: {},
+});
+
 /** Anyone in the organization, the same in every solution's accounts. */
 const organizationMembers = new cloudflare.ZeroTrustAccessPolicy('organization-members', {
   accountId: cloudflareAccountId,
@@ -62,12 +70,15 @@ const organizationMembers = new cloudflare.ZeroTrustAccessPolicy('organization-m
   includes: [{ emailDomain: { domain: 'medusa.software' } }],
 });
 
-/** Signs people in before a request reaches the Worker, through any of the account's login methods. */
+/** Signs people in before a request reaches the Worker. */
 new cloudflare.ZeroTrustAccessApplication('app', {
   accountId: cloudflareAccountId,
   name: 'app',
   type: 'self_hosted',
   destinations: [{ type: 'public', uri: hostname }],
+  allowedIdps: [oneTimePin.id],
+  // There is one way to sign in, so there is nothing to choose between
+  autoRedirectToIdentity: true,
   policies: [{ id: organizationMembers.id, precedence: 1 }],
 });
 
