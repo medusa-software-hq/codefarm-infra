@@ -1,7 +1,7 @@
 import * as cloudflare from '@pulumi/cloudflare';
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
-import artifacts from '../artifacts.json' with { type: 'json' };
+import edgeApp from '../artifacts/edge-app.json' with { type: 'json' };
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -73,7 +73,7 @@ const accessApplication = new cloudflare.ZeroTrustAccessApplication('app', {
  * The app Worker's bundle, as `codefarm` built and uploaded it to the base project's registry.
  * Pinned by its SHA-256, which is also its version there.
  */
-const { sha256: appBundleSha256 } = artifacts.edgeApp;
+const { sha256: appBundleSha256 } = edgeApp;
 
 const appBundle = gcp.artifactregistry
   .getFileOutput({
