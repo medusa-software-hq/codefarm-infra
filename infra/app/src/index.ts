@@ -6,6 +6,8 @@ import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+export { serviceUrl } from './service.ts';
+
 /** The project this stack manages, as configured for the stack. */
 const project = gcp.organizations.getProjectOutput({});
 
