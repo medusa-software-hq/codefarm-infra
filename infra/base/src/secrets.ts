@@ -4,8 +4,8 @@ import { allowRunsOnBranch, codefarmInfraRepository } from './githubPool.ts';
 import { projectId } from './project.ts';
 
 /**
- * Rotates the app provisioners' tokens, minting them with the minter tokens, and gives the
- * accounts' Google login methods their client secret.
+ * Rotates the app provisioners' tokens, minting them with the minter tokens, and the edge
+ * invokers' keys, and gives the accounts' Google login methods their client secret.
  * Not trusted in the GitHub environments, whose app jobs mustn't reach the minters.
  */
 export const secretsRotator = new gcp.serviceaccount.Account('secrets-rotator', {
