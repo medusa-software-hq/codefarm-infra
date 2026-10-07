@@ -1,4 +1,5 @@
 import * as gcp from '@pulumi/gcp';
+import * as pulumi from '@pulumi/pulumi';
 import service from '../artifacts/service.json' with { type: 'json' };
 
 /** What the service runs as; it needs nothing yet. */
@@ -7,10 +8,7 @@ const runtime = new gcp.serviceaccount.Account('service-runtime', {
   displayName: 'Service runtime',
 });
 
-/**
- * The origin behind the edge, running the image `codefarm` built, as pinned by digest. Nobody may
- * invoke it yet.
- */
+/** The origin behind the edge, running the image `codefarm` built, as pinned by digest. */
 const cloudRunService = new gcp.cloudrunv2.Service('service', {
   name: 'service',
   location: 'europe-central2',
@@ -27,6 +25,14 @@ const cloudRunService = new gcp.cloudrunv2.Service('service', {
       },
     ],
   },
+});
+
+// The edge, whose identity the base stack created in this project
+new gcp.cloudrunv2.ServiceIamMember('edge-invoker', {
+  name: cloudRunService.name,
+  location: cloudRunService.location,
+  role: 'roles/run.invoker',
+  member: `serviceAccount:edge-invoker@${new pulumi.Config('gcp').require('project')}.iam.gserviceaccount.com`,
 });
 
 export const serviceUrl = cloudRunService.uri;

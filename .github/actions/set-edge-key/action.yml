@@ -1,0 +1,102 @@
+name: Set edge key
+description: >-
+  Gives an environment's app Worker a key of its edge invoker, which stays out of Pulumi, logged
+  in to GCP as the secrets rotator
+
+inputs:
+  environment:
+    description: The environment, e.g. staging
+    required: true
+  project:
+    description: The environment's project, holding its edge invoker
+    required: true
+  cloudflare-account:
+    description: The environment's Cloudflare account ID
+    required: true
+  identity-provider:
+    description: Codefarm's workload identity provider, which trusts the rotator on main
+    required: true
+  replace:
+    description: Whether to replace an existing key; otherwise, a key is only set when missing
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Log in to GCP
+      uses: google-github-actions/auth@v3
+      with:
+        workload_identity_provider: ${{ inputs.identity-provider }}
+        service_account: secrets-rotator@codefarm-x-07da3c.iam.gserviceaccount.com
+
+    - name: Set the key
+      shell: bash
+      env:
+        ENVIRONMENT: ${{ inputs.environment }}
+        PROJECT: ${{ inputs.project }}
+        ACCOUNT: ${{ inputs.cloudflare-account }}
+        REPLACE: ${{ inputs.replace }}
+        BASE_PROJECT: codefarm-x-07da3c
+        # Cloudflare's "Workers Scripts Write"
+        WORKERS_SCRIPTS_WRITE: e086da7e2179491d91ee5f35b3ca210a
+      run: |
+        cloudflare() {
+          local token=$1 path=$2
+          shift 2
+          curl --silent --show-error --fail-with-body \
+            --header "Authorization: Bearer $token" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT$path" "$@"
+        }
+
+        minter_token=$(gcloud secrets versions access latest \
+          --secret="cloudflare-$ENVIRONMENT-minter-token" --project="$BASE_PROJECT")
+        echo "::add-mask::$minter_token"
+
+        # A token for this run only: deleted on exit, and expiring soon anyway
+        request=$(jq --null-input \
+          --arg expiresOn "$(date --utc --date='+15 minutes' +%Y-%m-%dT%H:%M:%SZ)" \
+          --arg group "$WORKERS_SCRIPTS_WRITE" \
+          --arg account "com.cloudflare.api.account.$ACCOUNT" \
+          '{name: "edge-key", expires_on: $expiresOn, policies: [
+            {effect: "allow", permission_groups: [{id: $group}], resources: {($account): "*"}}
+          ]}')
+        response=$(cloudflare "$minter_token" /tokens --json "$request")
+        token=$(jq --raw-output .result.value <<< "$response")
+        echo "::add-mask::$token"
+        token_id=$(jq --raw-output .result.id <<< "$response")
+        trap 'cloudflare "$minter_token" "/tokens/$token_id" --request DELETE > /dev/null' EXIT
+
+        secrets=/workers/scripts/app/secrets
+        status=$(curl --silent --show-error --output "$RUNNER_TEMP/secrets.json" --write-out '%{http_code}' \
+          --header "Authorization: Bearer $token" \
+          "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT$secrets")
+        if [[ $status == 404 ]]; then
+          echo "The \`$ENVIRONMENT\` Worker doesn't exist yet" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+        elif [[ $status != 200 ]]; then
+          cat "$RUNNER_TEMP/secrets.json" >&2
+          exit 1
+        elif [[ $REPLACE != true ]] \
+          && jq --exit-status '.result[] | select(.name == "GCP_SA_KEY")' "$RUNNER_TEMP/secrets.json" \
+            > /dev/null; then
+          echo "The \`$ENVIRONMENT\` Worker already has a key" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+        fi
+
+        invoker="edge-invoker@$PROJECT.iam.gserviceaccount.com"
+        key_file="$RUNNER_TEMP/edge-key.json"
+        trap 'rm -f "$key_file"; cloudflare "$minter_token" "/tokens/$token_id" --request DELETE > /dev/null' EXIT
+        gcloud iam service-accounts keys create "$key_file" --iam-account="$invoker" --quiet
+        key_id=$(jq --raw-output .private_key_id "$key_file")
+
+        jq --null-input --rawfile key "$key_file" '{name: "GCP_SA_KEY", type: "secret_text", text: $key}' \
+          | cloudflare "$token" "$secrets" --request PUT --json @- > /dev/null
+
+        # Only once the Worker has the new key
+        for old_key_id in $(gcloud iam service-accounts keys list --iam-account="$invoker" \
+          --managed-by=user --format='value(name.basename())'); do
+          if [[ $old_key_id != "$key_id" ]]; then
+            gcloud iam service-accounts keys delete "$old_key_id" --iam-account="$invoker" --quiet
+          fi
+        done
+        echo "Gave the \`$ENVIRONMENT\` Worker the key \`$key_id\`" >> "$GITHUB_STEP_SUMMARY"

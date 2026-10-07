@@ -2,11 +2,12 @@ import * as cloudflare from '@pulumi/cloudflare';
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
 import edgeApp from '../artifacts/edge-app.json' with { type: 'json' };
+import { serviceUrl } from './service.ts';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-export { serviceUrl } from './service.ts';
+export { serviceUrl };
 
 /** The project this stack manages, as configured for the stack. */
 const project = gcp.organizations.getProjectOutput({});
@@ -105,7 +106,10 @@ const worker = new cloudflare.WorkersScript('worker', {
     // Also orders the two: the application exists before the Worker serves anything
     { name: 'ACCESS_AUDIENCE', type: 'plain_text', text: accessApplication.aud },
     { name: 'ENVIRONMENT', type: 'plain_text', text: pulumi.getStack() },
+    { name: 'ORIGIN_URL', type: 'plain_text', text: serviceUrl },
   ],
+  // Kept from the deployed version: `GCP_SA_KEY`, which "Apply app" sets outside Pulumi
+  keepBindings: ['secret_text'],
 });
 
 // Access guards only hostnames it knows, so the Worker's other addresses stay off
