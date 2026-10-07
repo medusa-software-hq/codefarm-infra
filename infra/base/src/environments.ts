@@ -143,6 +143,23 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     pulumi.interpolate`serviceAccount:${appProvisioner.email}`,
   );
 
+  /** What the edge calls the environment's service as, with a key that `secrets-rotator@` rotates. */
+  const edgeInvoker = new gcp.serviceaccount.Account(
+    `${name}-edge-invoker`,
+    { project: projectId, accountId: 'edge-invoker', displayName: 'Edge invoker' },
+    { provider },
+  );
+
+  new gcp.serviceaccount.IAMMember(
+    `${name}-edge-invoker-rotator`,
+    {
+      serviceAccountId: edgeInvoker.name,
+      role: 'roles/iam.serviceAccountKeyAdmin',
+      member: secretsRotatorMember,
+    },
+    { provider },
+  );
+
   return { appProvisioner };
 }
 
