@@ -30,37 +30,40 @@ const bundlesRepository = new gcp.artifactregistry.Repository(
   { dependsOn: [artifactRegistryApi] },
 );
 
-/** Both repositories, by the names their access is declared under. */
+/** The repositories, by the names their access is declared under. */
 const repositories = { images: imagesRepository, bundles: bundlesRepository };
 
-function allow(
+/**
+ * Grants the member `roles/artifactregistry.<access>` on the given repositories, all of them by
+ * default.
+ */
+export function allowArtifactAccess(
   namePrefix: string,
-  role: string,
+  access: 'reader' | 'writer',
   member: pulumi.Input<string>,
+  repositoryNames: readonly (keyof typeof repositories)[] = ['images', 'bundles'],
   opts?: pulumi.CustomResourceOptions,
 ): void {
-  for (const [key, repository] of Object.entries(repositories)) {
+  for (const repositoryName of repositoryNames) {
+    const repository = repositories[repositoryName];
+
     new gcp.artifactregistry.RepositoryIamMember(
-      `${namePrefix}-${key}`,
-      { location: repository.location, repository: repository.name, role, member },
+      `${namePrefix}-${repositoryName}`,
+      {
+        location: repository.location,
+        repository: repository.name,
+        role: `roles/artifactregistry.${access}`,
+        member,
+      },
       opts,
     );
   }
 }
 
-/** Lets the member download any of the artifacts. */
-export function allowArtifactReads(
-  namePrefix: string,
-  member: pulumi.Input<string>,
-  opts?: pulumi.CustomResourceOptions,
-): void {
-  allow(namePrefix, 'roles/artifactregistry.reader', member, opts);
-}
-
-allow(
+allowArtifactAccess(
   'artifact-builder',
-  'roles/artifactregistry.writer',
+  'writer',
   pulumi.interpolate`serviceAccount:${artifactBuilder.email}`,
 );
 
-allowArtifactReads('reader', reader);
+allowArtifactAccess('reader', 'reader', reader);
