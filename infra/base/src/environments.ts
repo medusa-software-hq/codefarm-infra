@@ -1,6 +1,6 @@
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
-import { allowArtifactReads } from './artifacts.ts';
+import { allowArtifactAccess } from './artifacts.ts';
 import { allowRunsInEnvironment, codefarmInfraRepository } from './githubPool.ts';
 import { primaryLocation, projectId as baseProjectId, reader } from './project.ts';
 import { secretsRotatorMember } from './secrets.ts';
@@ -116,9 +116,30 @@ function codefarmEnvironment(name: string, { projectId, appStateBucket }: Enviro
     { provider },
   );
 
+  const cloudRunApi = new gcp.projects.Service(
+    `${name}-cloud-run-api`,
+    { project: projectId, service: 'run.googleapis.com', disableOnDestroy: false },
+    { provider },
+  );
+
+  // Cloud Run pulls the app's images as its service agent, created here so it can be granted that
+  const cloudRunAgent = new gcp.projects.ServiceIdentity(
+    `${name}-cloud-run-agent`,
+    { project: projectId, service: 'run.googleapis.com' },
+    { provider, dependsOn: [cloudRunApi] },
+  );
+
+  allowArtifactAccess(
+    `${name}-cloud-run-agent`,
+    'reader',
+    pulumi.interpolate`serviceAccount:${cloudRunAgent.email}`,
+    ['images'],
+  );
+
   // The app stack deploys what `codefarm` built, as pinned in its code
-  allowArtifactReads(
+  allowArtifactAccess(
     `${name}-app-provisioner`,
+    'reader',
     pulumi.interpolate`serviceAccount:${appProvisioner.email}`,
   );
 
