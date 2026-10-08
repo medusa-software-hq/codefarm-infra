@@ -4,7 +4,7 @@ Codefarm's infrastructure, declared as code with Pulumi.
 
 The `base` stack manages what Codefarm's environments share. The `app` stack is applied once per environment with the same code: to staging first, then to production.
 
-Changes are proposed as pull requests, previewed there, and applied after merging. Each stack has its own workflows, so a change that one stack depends on in the other needs a pull request of its own.
+Changes are proposed as pull requests, previewed there, and applied after merging, unless the pull request has the `skip-apply` label; running the apply workflow by hand applies anyway. Each stack has its own workflows, so a change that one stack depends on in the other needs a pull request of its own.
 
 From scratch, each step needs the previous one:
 

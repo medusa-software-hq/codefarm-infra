@@ -23,8 +23,25 @@ env:
   ROOT_POOL_PROVIDER: projects/626887270411/locations/global/workloadIdentityPools/github/providers/github-actions
 
 jobs:
+  check-skip-apply-label:
+    name: Check for the skip-apply label
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - id: check
+        uses: ./.github/actions/check-skip-apply-label
+
   apply-base:
     name: Apply base
+    needs: check-skip-apply-label
+    if: needs.check-skip-apply-label.outputs.skip != 'true'
     runs-on: ubuntu-latest
 
     steps:
