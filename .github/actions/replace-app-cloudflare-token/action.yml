@@ -1,4 +1,4 @@
-name: Replace app token
+name: Replace app Cloudflare token
 description: >-
   Gives an environment's app provisioner a Cloudflare token minted with the minter token, which
   stays out of Pulumi, logged in to GCP as the secrets rotator
@@ -44,7 +44,16 @@ runs:
         ACCESS_IDENTITY_PROVIDERS_WRITE: bfe0d8686a584fa680f4c53b5eb0de6d
         TOKEN_NAME: app-provisioner
       run: |
-        report() { echo "- $1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+        summary() { echo "$1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+        report() { summary "- $1"; }
+        summary "### App provisioner Cloudflare API token"
+        summary ""
+        summary "Cloudflare account: \`$ACCOUNT\`"
+        summary ""
+        summary "Secret Manager secret: \`cloudflare-app-provisioner-token\` in \`$PROJECT\`"
+        summary ""
+        summary "#### Steps"
+        summary ""
 
         tokens() {
           local path=$1
@@ -80,7 +89,7 @@ runs:
 
         version=$(printf %s "$token" | gcloud secrets versions add cloudflare-app-provisioner-token \
           --project="$PROJECT" --data-file=- --format='value(name.basename())')
-        report "Minted the token \`$token_id\` for \`$ENVIRONMENT\`, stored as version \`$version\`"
+        report "Minted the token \`$token_id\`, stored as version \`$version\`"
 
         old_ids=$(tokens "?per_page=50" | jq --raw-output --arg name "$TOKEN_NAME" --arg id "$token_id" \
           '.result[] | select(.name == $name and .id != $id) | .id')

@@ -1,4 +1,4 @@
-name: Replace edge key
+name: Replace edge GCP SA key
 description: >-
   Gives an environment's app Worker a key of its edge invoker, which stays out of Pulumi, logged
   in to GCP as the secrets rotator
@@ -36,7 +36,16 @@ runs:
         # Cloudflare's "Workers Scripts Write"
         WORKERS_SCRIPTS_WRITE: e086da7e2179491d91ee5f35b3ca210a
       run: |
-        report() { echo "- $1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+        summary() { echo "$1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+        report() { summary "- $1"; }
+        summary "### Edge GCP service account key"
+        summary ""
+        summary "Service account: \`edge-invoker@$PROJECT.iam.gserviceaccount.com\`"
+        summary ""
+        summary "Cloudflare Worker: \`app\` in the account \`$ACCOUNT\`, as its secret \`GCP_SA_KEY\`"
+        summary ""
+        summary "#### Steps"
+        summary ""
 
         cloudflare() {
           local token=$1 path=$2
@@ -69,7 +78,7 @@ runs:
           --header "Authorization: Bearer $token" \
           "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT$secrets")
         if [[ $status == 404 ]]; then
-          report "Skipped: the \`$ENVIRONMENT\` Worker doesn't exist yet"
+          report "Skipped: the Worker doesn't exist yet"
           exit 0
         elif [[ $status != 200 ]]; then
           cat "$RUNNER_TEMP/secrets.json" >&2
@@ -84,7 +93,7 @@ runs:
 
         jq --null-input --rawfile key "$key_file" '{name: "GCP_SA_KEY", type: "secret_text", text: $key}' \
           | cloudflare "$token" "$secrets" --request PUT --json @- > /dev/null
-        report "Created the key \`$key_id\` and gave it to the \`$ENVIRONMENT\` Worker"
+        report "Created the key \`$key_id\` and gave it to the Worker"
 
         # Only once the Worker has the new key
         for old_key_id in $(gcloud iam service-accounts keys list --iam-account="$invoker" \
