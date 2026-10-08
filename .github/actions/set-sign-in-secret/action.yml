@@ -1,4 +1,4 @@
-name: Sign-in secret
+name: Set sign-in secret
 description: >-
   Gives an environment's Google login method the sign-in client's secret, which stays out of
   Pulumi, logged in to GCP as the secrets rotator
@@ -75,3 +75,4 @@ runs:
           config: ((.config | del(.redirect_url)) + {client_secret: $ENV.CLIENT_SECRET})}' <<< "$provider")
         cloudflare "$token" "/access/identity_providers/$provider_id" --request PUT --json "$request" \
           > /dev/null
+        echo "Gave \`$ENVIRONMENT\`'s Google login method the client secret" | tee -a "$GITHUB_STEP_SUMMARY"

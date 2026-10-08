@@ -1,4 +1,4 @@
-name: Set edge key
+name: Replace edge key
 description: >-
   Gives an environment's app Worker a key of its edge invoker, which stays out of Pulumi, logged
   in to GCP as the secrets rotator
@@ -16,9 +16,6 @@ inputs:
   identity-provider:
     description: Codefarm's workload identity provider, which trusts the rotator on main
     required: true
-  replace:
-    description: Whether to replace an existing key; otherwise, a key is only set when missing
-    default: "false"
 
 runs:
   using: composite
@@ -29,17 +26,18 @@ runs:
         workload_identity_provider: ${{ inputs.identity-provider }}
         service_account: secrets-rotator@codefarm-x-07da3c.iam.gserviceaccount.com
 
-    - name: Set the key
+    - name: Replace the key
       shell: bash
       env:
         ENVIRONMENT: ${{ inputs.environment }}
         PROJECT: ${{ inputs.project }}
         ACCOUNT: ${{ inputs.cloudflare-account }}
-        REPLACE: ${{ inputs.replace }}
         BASE_PROJECT: codefarm-x-07da3c
         # Cloudflare's "Workers Scripts Write"
         WORKERS_SCRIPTS_WRITE: e086da7e2179491d91ee5f35b3ca210a
       run: |
+        report() { echo "- $1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+
         cloudflare() {
           local token=$1 path=$2
           shift 2
@@ -71,16 +69,11 @@ runs:
           --header "Authorization: Bearer $token" \
           "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT$secrets")
         if [[ $status == 404 ]]; then
-          echo "The \`$ENVIRONMENT\` Worker doesn't exist yet" >> "$GITHUB_STEP_SUMMARY"
+          report "Skipped: the \`$ENVIRONMENT\` Worker doesn't exist yet"
           exit 0
         elif [[ $status != 200 ]]; then
           cat "$RUNNER_TEMP/secrets.json" >&2
           exit 1
-        elif [[ $REPLACE != true ]] \
-          && jq --exit-status '.result[] | select(.name == "GCP_SA_KEY")' "$RUNNER_TEMP/secrets.json" \
-            > /dev/null; then
-          echo "The \`$ENVIRONMENT\` Worker already has a key" >> "$GITHUB_STEP_SUMMARY"
-          exit 0
         fi
 
         invoker="edge-invoker@$PROJECT.iam.gserviceaccount.com"
@@ -91,12 +84,13 @@ runs:
 
         jq --null-input --rawfile key "$key_file" '{name: "GCP_SA_KEY", type: "secret_text", text: $key}' \
           | cloudflare "$token" "$secrets" --request PUT --json @- > /dev/null
+        report "Created the key \`$key_id\` and gave it to the \`$ENVIRONMENT\` Worker"
 
         # Only once the Worker has the new key
         for old_key_id in $(gcloud iam service-accounts keys list --iam-account="$invoker" \
           --managed-by=user --format='value(name.basename())'); do
           if [[ $old_key_id != "$key_id" ]]; then
             gcloud iam service-accounts keys delete "$old_key_id" --iam-account="$invoker" --quiet
+            report "Deleted the old key \`$old_key_id\`"
           fi
         done
-        echo "Gave the \`$ENVIRONMENT\` Worker the key \`$key_id\`" >> "$GITHUB_STEP_SUMMARY"
