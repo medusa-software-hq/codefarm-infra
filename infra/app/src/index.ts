@@ -119,6 +119,8 @@ const worker = new cloudflare.WorkersScript('worker', {
     { name: 'ORIGIN_URL', type: 'plain_text', text: serviceUrl },
     { name: 'ASSETS', type: 'assets' },
   ],
+  // Workers Logs, with a log of each invocation besides what the Worker logs
+  observability: { enabled: true, logs: { enabled: true, invocationLogs: true } },
   // Kept from the deployed version: `GCP_SA_KEY`, which "Rotate app secrets" sets outside Pulumi
   keepBindings: ['secret_text'],
 });
