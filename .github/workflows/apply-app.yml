@@ -7,8 +7,7 @@ on:
       - infra/*
       - infra/app/**
       - .github/actions/pulumi/**
-      - .github/actions/sign-in-secret/**
-      - .github/actions/set-edge-key/**
+      - .github/actions/set-sign-in-secret/**
       - .github/workflows/apply-app.yml
   workflow_dispatch:
 
@@ -52,28 +51,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/sign-in-secret
+      - uses: ./.github/actions/set-sign-in-secret
         with:
           environment: staging
-          cloudflare-account: ae368f2f5d706c90fb13fca3270ae566
-          identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
-
-  # Outside the GitHub environment: the rotator is trusted on main only, unlike the app jobs
-  edge-key-staging:
-    name: Set staging's edge key
-    needs: apply-staging
-    runs-on: ubuntu-latest
-    # Shared with "Rotate app secrets", which replaces the edge key
-    concurrency:
-      group: edge-key-staging
-
-    steps:
-      - uses: actions/checkout@v7.0.1
-
-      - uses: ./.github/actions/set-edge-key
-        with:
-          environment: staging
-          project: codefarm-s-c20d22
           cloudflare-account: ae368f2f5d706c90fb13fca3270ae566
           identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
 
@@ -105,27 +85,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/sign-in-secret
+      - uses: ./.github/actions/set-sign-in-secret
         with:
           environment: production
-          cloudflare-account: 33a38acf2f1943aef0bd5e459903e688
-          identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}
-
-  # Outside the GitHub environment: the rotator is trusted on main only, unlike the app jobs
-  edge-key-production:
-    name: Set production's edge key
-    needs: apply-production
-    runs-on: ubuntu-latest
-    # Shared with "Rotate app secrets", which replaces the edge key
-    concurrency:
-      group: edge-key-production
-
-    steps:
-      - uses: actions/checkout@v7.0.1
-
-      - uses: ./.github/actions/set-edge-key
-        with:
-          environment: production
-          project: codefarm-p-3d2dea
           cloudflare-account: 33a38acf2f1943aef0bd5e459903e688
           identity-provider: ${{ env.CODEFARM_POOL_PROVIDER }}

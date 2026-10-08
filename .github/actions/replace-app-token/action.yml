@@ -1,0 +1,98 @@
+name: Replace app token
+description: >-
+  Gives an environment's app provisioner a Cloudflare token minted with the minter token, which
+  stays out of Pulumi, logged in to GCP as the secrets rotator
+
+inputs:
+  environment:
+    description: The environment, e.g. staging
+    required: true
+  project:
+    description: The environment's project, holding the token's secret
+    required: true
+  cloudflare-account:
+    description: The environment's Cloudflare account ID
+    required: true
+  identity-provider:
+    description: Codefarm's workload identity provider, which trusts the rotator on main
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Log in to GCP
+      uses: google-github-actions/auth@v3
+      with:
+        workload_identity_provider: ${{ inputs.identity-provider }}
+        service_account: secrets-rotator@codefarm-x-07da3c.iam.gserviceaccount.com
+
+    # Mints a new token, then revokes the old ones and destroys their versions
+    - name: Replace the token
+      shell: bash
+      env:
+        BASE_PROJECT: codefarm-x-07da3c
+        ENVIRONMENT: ${{ inputs.environment }}
+        PROJECT: ${{ inputs.project }}
+        ACCOUNT: ${{ inputs.cloudflare-account }}
+        # Cloudflare's "Workers Scripts Write" ("Workers Scripts Edit" in the dashboard)
+        WORKERS_SCRIPTS_WRITE: e086da7e2179491d91ee5f35b3ca210a
+        # Cloudflare's "Workers Routes Write", a zone permission that custom domains need
+        WORKERS_ROUTES_WRITE: 28f4b596e7d643029c524985477ae49a
+        # Cloudflare's "Access: Apps and Policies Write", for who may reach the app
+        ACCESS_APPS_WRITE: 1e13c5124ca64b72b1969a67e8829049
+        # Cloudflare's "Access: Organizations, Identity Providers, and Groups Write", for login methods
+        ACCESS_IDENTITY_PROVIDERS_WRITE: bfe0d8686a584fa680f4c53b5eb0de6d
+        TOKEN_NAME: app-provisioner
+      run: |
+        report() { echo "- $1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+
+        tokens() {
+          local path=$1
+          shift
+          curl --silent --show-error --fail-with-body \
+            --header "Authorization: Bearer $minter_token" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT/tokens$path" "$@"
+        }
+
+        minter_token=$(gcloud secrets versions access latest \
+          --secret="cloudflare-$ENVIRONMENT-minter-token" --project="$BASE_PROJECT")
+        echo "::add-mask::$minter_token"
+
+        # Expires in case rotation stops
+        request=$(jq --null-input \
+          --arg name "$TOKEN_NAME" \
+          --arg expiresOn "$(date --utc --date='+90 days' +%Y-%m-%dT%H:%M:%SZ)" \
+          --arg scripts "$WORKERS_SCRIPTS_WRITE" \
+          --arg routes "$WORKERS_ROUTES_WRITE" \
+          --arg access "$ACCESS_APPS_WRITE" \
+          --arg identityProviders "$ACCESS_IDENTITY_PROVIDERS_WRITE" \
+          --arg account "com.cloudflare.api.account.$ACCOUNT" \
+          '{name: $name, expires_on: $expiresOn, policies: [
+            {effect: "allow", resources: {($account): "*"},
+              permission_groups: [{id: $scripts}, {id: $access}, {id: $identityProviders}]},
+            {effect: "allow", permission_groups: [{id: $routes}],
+              resources: {($account): {"com.cloudflare.api.account.zone.*": "*"}}}
+          ]}')
+        response=$(tokens "" --json "$request")
+        token=$(jq --raw-output .result.value <<< "$response")
+        echo "::add-mask::$token"
+        token_id=$(jq --raw-output .result.id <<< "$response")
+
+        version=$(printf %s "$token" | gcloud secrets versions add cloudflare-app-provisioner-token \
+          --project="$PROJECT" --data-file=- --format='value(name.basename())')
+        report "Minted the token \`$token_id\` for \`$ENVIRONMENT\`, stored as version \`$version\`"
+
+        old_ids=$(tokens "?per_page=50" | jq --raw-output --arg name "$TOKEN_NAME" --arg id "$token_id" \
+          '.result[] | select(.name == $name and .id != $id) | .id')
+        for old_id in $old_ids; do
+          tokens "/$old_id" --request DELETE > /dev/null
+          report "Revoked the old token \`$old_id\`"
+        done
+
+        old_versions=$(gcloud secrets versions list cloudflare-app-provisioner-token --project="$PROJECT" \
+          --filter=state=ENABLED --sort-by=~createTime --format='value(name.basename())' | tail --lines=+2)
+        for old_version in $old_versions; do
+          gcloud secrets versions destroy "$old_version" \
+            --secret=cloudflare-app-provisioner-token --project="$PROJECT" --quiet
+          report "Destroyed the old version \`$old_version\`"
+        done
