@@ -105,10 +105,9 @@ const worker = new cloudflare.WorkersScript('worker', {
     { name: 'ACCESS_ISSUER', type: 'plain_text', text: accessIssuer },
     // Also orders the two: the application exists before the Worker serves anything
     { name: 'ACCESS_AUDIENCE', type: 'plain_text', text: accessApplication.aud },
-    { name: 'ENVIRONMENT', type: 'plain_text', text: pulumi.getStack() },
     { name: 'ORIGIN_URL', type: 'plain_text', text: serviceUrl },
   ],
-  // Kept from the deployed version: `GCP_SA_KEY`, which "Apply app" sets outside Pulumi
+  // Kept from the deployed version: `GCP_SA_KEY`, which "Rotate app secrets" sets outside Pulumi
   keepBindings: ['secret_text'],
 });
 
