@@ -1,7 +1,8 @@
-name: Set sign-in secret
+name: Set Cloudflare Access IdP client secret
 description: >-
-  Gives an environment's Google login method the sign-in client's secret, which stays out of
-  Pulumi, logged in to GCP as the secrets rotator
+  Gives an environment's Cloudflare Access identity provider, Google Workspace, the secret of the
+  organization's Google OAuth client, which stays out of Pulumi, logged in to GCP as the secrets
+  rotator
 
 inputs:
   environment:
@@ -66,7 +67,7 @@ runs:
           | jq '.result[] | select(.type == "google-apps")')
         provider_id=$(jq --raw-output '.id // empty' <<< "$provider")
         if [[ -z $provider_id ]]; then
-          echo "The account has no Google login method" >&2
+          echo "The account has no Google Workspace identity provider" >&2
           exit 1
         fi
 
@@ -75,4 +76,13 @@ runs:
           config: ((.config | del(.redirect_url)) + {client_secret: $ENV.CLIENT_SECRET})}' <<< "$provider")
         cloudflare "$token" "/access/identity_providers/$provider_id" --request PUT --json "$request" \
           > /dev/null
-        echo "Gave \`$ENVIRONMENT\`'s Google login method the client secret" | tee -a "$GITHUB_STEP_SUMMARY"
+        summary() { echo "$1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+        summary "### Cloudflare Access IdP client secret"
+        summary ""
+        summary "Cloudflare account: \`$ACCOUNT\`"
+        summary ""
+        summary "Identity provider: Google Workspace (\`google-apps\`), \`$provider_id\`"
+        summary ""
+        summary "#### Steps"
+        summary ""
+        summary "- Set the secret from \`google-sign-in-client-secret\` in \`$BASE_PROJECT\`"
