@@ -2,8 +2,11 @@ import * as cloudflare from '@pulumi/cloudflare';
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
 import edgeApp from '../artifacts/edge-app.json' with { type: 'json' };
+import frontend from '../artifacts/frontend.json' with { type: 'json' };
+import { downloadArtifact } from './artifacts.ts';
 import { serviceUrl } from './service.ts';
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -72,40 +75,44 @@ const accessApplication = new cloudflare.ZeroTrustAccessApplication('app', {
   policies: [{ id: organizationMembers.id, precedence: 1 }],
 });
 
-/**
- * The app Worker's bundle, as `codefarm` built and uploaded it to the base project's registry.
- * Pinned by its SHA-256, which is also its version there.
- */
-const { sha256: appBundleSha256 } = edgeApp;
+/** The app Worker's code, as `codefarm` built it. */
+const appBundlePath = downloadArtifact('edge-app', edgeApp.sha256, 'worker.js');
 
-const appBundle = gcp.artifactregistry
-  .getFileOutput({
-    project: 'codefarm-x-07da3c',
-    location: 'europe-central2',
-    repositoryId: 'bundles',
-    fileId: `edge-app:${appBundleSha256}:worker.js`,
-    outputPath: join(tmpdir(), `edge-app-${appBundleSha256}.js`),
-  })
-  .apply(({ outputPath, outputSha256 }) => {
-    if (outputSha256 !== appBundleSha256) {
-      throw new Error(`The app bundle's SHA-256 is ${outputSha256}, not ${appBundleSha256}`);
-    }
-    return readFileSync(outputPath, 'utf8');
-  });
+const appBundleContent = appBundlePath.apply((path) => readFileSync(path, 'utf8'));
 
-/** Serves a placeholder page to those Access signed in, until Codefarm itself is deployed. */
+/** The frontend's files, as `codefarm` built and archived them. */
+const frontendArchivePath = downloadArtifact('frontend', frontend.sha256, 'frontend.tar.gz');
+
+/** Where they're unpacked, for the Worker's assets. */
+const frontendDirectoryPath = frontendArchivePath.apply((archivePath) => {
+  const directoryPath = mkdtempSync(join(tmpdir(), 'frontend-'));
+  execFileSync('tar', ['-xzf', archivePath, '-C', directoryPath]);
+
+  return directoryPath;
+});
+
+/** The app, with the frontend's files as its assets, for those Access signed in. */
 const worker = new cloudflare.WorkersScript('worker', {
   accountId: cloudflareAccountId,
   // The account and the domain already name the environment
   scriptName: 'app',
   mainModule: 'worker.js',
-  content: appBundle,
+  content: appBundleContent,
   compatibilityDate: '2026-10-01',
+  assets: {
+    directory: frontendDirectoryPath,
+    config: {
+      // Every request passes the Worker's Access check, files included
+      runWorkerFirst: true,
+      notFoundHandling: 'single-page-application',
+    },
+  },
   bindings: [
     { name: 'ACCESS_ISSUER', type: 'plain_text', text: accessIssuer },
     // Also orders the two: the application exists before the Worker serves anything
     { name: 'ACCESS_AUDIENCE', type: 'plain_text', text: accessApplication.aud },
     { name: 'ORIGIN_URL', type: 'plain_text', text: serviceUrl },
+    { name: 'ASSETS', type: 'assets' },
   ],
   // Kept from the deployed version: `GCP_SA_KEY`, which "Rotate app secrets" sets outside Pulumi
   keepBindings: ['secret_text'],
