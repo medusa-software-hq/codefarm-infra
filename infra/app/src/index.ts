@@ -6,7 +6,7 @@ import frontend from '../artifacts/frontend.json' with { type: 'json' };
 import { downloadArtifact } from './artifacts.ts';
 import { serviceUrl } from './service.ts';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -83,9 +83,14 @@ const appBundleContent = appBundlePath.apply((path) => readFileSync(path, 'utf8'
 /** The frontend's files, as `codefarm` built and archived them. */
 const frontendArchivePath = downloadArtifact('frontend', frontend.sha256, 'frontend.tar.gz');
 
-/** Where they're unpacked, for the Worker's assets. */
+/**
+ * Where they're unpacked, for the Worker's assets. Named after the archive, so the Worker's input
+ * only changes with the frontend; emptied first, in case an earlier run left files there.
+ */
 const frontendDirectoryPath = frontendArchivePath.apply((archivePath) => {
-  const directoryPath = mkdtempSync(join(tmpdir(), 'frontend-'));
+  const directoryPath = join(tmpdir(), `frontend-${frontend.sha256}`);
+  rmSync(directoryPath, { recursive: true, force: true });
+  mkdirSync(directoryPath);
   execFileSync('tar', ['-xzf', archivePath, '-C', directoryPath]);
 
   return directoryPath;
