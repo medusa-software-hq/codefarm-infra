@@ -888,12 +888,12 @@ __metadata:
   linkType: hard
 
 "@pulumi/gcp@npm:^9.0.0":
-  version: 9.37.0
-  resolution: "@pulumi/gcp@npm:9.37.0"
+  version: 9.37.1
+  resolution: "@pulumi/gcp@npm:9.37.1"
   dependencies:
     "@pulumi/pulumi": "npm:^3.142.0"
     "@types/express": "npm:^4.16.0"
-  checksum: 10c0/aa1f73432f01b28690c7f1f2bebf3d0296c25ef203406b28852b528d274691878a4879b46287d7ff2ff16468873e5f1a871929e9106eb305ba0e3bc9b2f2a6e2
+  checksum: 10c0/94af7e703fa2da0879b9f191934418aed31d72b3cc519f3f779f484918c7d3a23200920e57e25cc61854efceb776028e49b272b681ad0d6198a01e24b79537bd
   languageName: node
   linkType: hard
 
