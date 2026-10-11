@@ -879,11 +879,11 @@ __metadata:
   linkType: hard
 
 "@pulumi/cloudflare@npm:^6.21.0":
-  version: 6.21.0
-  resolution: "@pulumi/cloudflare@npm:6.21.0"
+  version: 6.22.0
+  resolution: "@pulumi/cloudflare@npm:6.22.0"
   dependencies:
     "@pulumi/pulumi": "npm:^3.142.0"
-  checksum: 10c0/81a407a85b9cb5a684a717b970fe53937283fcb1d971abaff5117ede1e38aefe9aa864ccf6bfe1846d5ae4365094ad9be4ad7f8219945714023a895165b4e83f
+  checksum: 10c0/5d143e69fdff6d9ac8c35332cf12bbeb7e6dc7432e8099cc66e949df270c58a85f84f8ada9567051dbc6bb02f6af6e215cb5c2e141f5d5c1b900cbecaa980b00
   languageName: node
   linkType: hard
 
