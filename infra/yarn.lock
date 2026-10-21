@@ -887,13 +887,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pulumi/gcp@npm:^9.0.0":
-  version: 9.37.1
-  resolution: "@pulumi/gcp@npm:9.37.1"
+"@pulumi/gcp@npm:^10.0.0":
+  version: 10.2.0
+  resolution: "@pulumi/gcp@npm:10.2.0"
   dependencies:
     "@pulumi/pulumi": "npm:^3.142.0"
     "@types/express": "npm:^4.16.0"
-  checksum: 10c0/94af7e703fa2da0879b9f191934418aed31d72b3cc519f3f779f484918c7d3a23200920e57e25cc61854efceb776028e49b272b681ad0d6198a01e24b79537bd
+  checksum: 10c0/8ba7a26bb4b3ff5d08c4a2935dd504a6eeff9780aad6d7580c7a72848e480461d9ea3bbb89a7eda83707ae15c67acea6c6aaf42bfa8d3b36c79ee5c2a685d4e3
   languageName: node
   linkType: hard
 
@@ -1188,7 +1188,7 @@ __metadata:
   resolution: "app@workspace:app"
   dependencies:
     "@pulumi/cloudflare": "npm:^6.21.0"
-    "@pulumi/gcp": "npm:^9.0.0"
+    "@pulumi/gcp": "npm:^10.0.0"
     "@pulumi/pulumi": "npm:^3.150.0"
   languageName: unknown
   linkType: soft
@@ -1211,7 +1211,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "base@workspace:base"
   dependencies:
-    "@pulumi/gcp": "npm:^9.0.0"
+    "@pulumi/gcp": "npm:^10.0.0"
     "@pulumi/pulumi": "npm:^3.150.0"
   languageName: unknown
   linkType: soft
