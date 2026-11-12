@@ -261,7 +261,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/api@npm:^1.3.0, @opentelemetry/api@npm:^1.9":
+"@opentelemetry/api@npm:^1.3.0, @opentelemetry/api@npm:^1.9, @opentelemetry/api@npm:~1.9":
   version: 1.9.1
   resolution: "@opentelemetry/api@npm:1.9.1"
   checksum: 10c0/c608485fc8b5a91e1f7e05e843b45b509307456b31cd2ad365933d90813e40ebfedf179f1451c762037e82d7c76aa8500e95d2da3609f640a1206cde5322cd14
@@ -887,13 +887,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pulumi/gcp@npm:^9.0.0":
-  version: 9.37.1
-  resolution: "@pulumi/gcp@npm:9.37.1"
+"@pulumi/gcp@npm:^10.0.0":
+  version: 10.3.0
+  resolution: "@pulumi/gcp@npm:10.3.0"
   dependencies:
-    "@pulumi/pulumi": "npm:^3.142.0"
+    "@pulumi/pulumi": "npm:^3.269.0"
     "@types/express": "npm:^4.16.0"
-  checksum: 10c0/94af7e703fa2da0879b9f191934418aed31d72b3cc519f3f779f484918c7d3a23200920e57e25cc61854efceb776028e49b272b681ad0d6198a01e24b79537bd
+  checksum: 10c0/45c7e36ba99ebcc7f0b3241cbeccd793a4aaacfe4deb42903dea765e8291157bb4414cf162fed51dea637e23206d3fed10d96747f3f3184b6b28393e7d17f9a2
   languageName: node
   linkType: hard
 
@@ -935,6 +935,46 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/b318a5c591dfc22cca7640379dc2e652b23623f1e54230515a7865d84f43d01406e635f548bd68651745097ce4531e524cd4a3033b06844d65fee73b663564cb
+  languageName: node
+  linkType: hard
+
+"@pulumi/pulumi@npm:^3.269.0":
+  version: 3.274.1
+  resolution: "@pulumi/pulumi@npm:3.274.1"
+  dependencies:
+    "@grpc/grpc-js": "npm:^1.10.1"
+    "@logdna/tail-file": "npm:^2.0.6"
+    "@opentelemetry/api": "npm:~1.9"
+    "@opentelemetry/core": "npm:^2.9"
+    "@opentelemetry/exporter-trace-otlp-grpc": "npm:^0.220"
+    "@opentelemetry/exporter-zipkin": "npm:^2.9"
+    "@opentelemetry/instrumentation": "npm:^0.220"
+    "@opentelemetry/instrumentation-grpc": "npm:^0.220"
+    "@opentelemetry/resources": "npm:^2.9"
+    "@opentelemetry/sdk-trace-base": "npm:^2.9"
+    "@opentelemetry/sdk-trace-node": "npm:^2.9"
+    "@opentelemetry/semantic-conventions": "npm:^1.42"
+    "@types/google-protobuf": "npm:^3.15.5"
+    "@types/semver": "npm:^7.5.6"
+    execa: "npm:^5.1.0"
+    google-protobuf: "npm:^3.21.4"
+    ini: "npm:^2.0.0"
+    js-yaml: "npm:^4.3.2"
+    minimist: "npm:^1.2.6"
+    normalize-package-data: "npm:^6.0.0"
+    require-from-string: "npm:^2.0.1"
+    semver: "npm:^7.5.2"
+    source-map-support: "npm:^0.5.6"
+    upath: "npm:^1.1.0"
+  peerDependencies:
+    ts-node: ">= 7.0.1 < 12"
+    typescript: ">= 3.8.3 < 7"
+  peerDependenciesMeta:
+    ts-node:
+      optional: true
+    typescript:
+      optional: true
+  checksum: 10c0/6be6ff0bf8af2663773b54380d7b307c8798041ebb8a14d4aac7af77571d7630b1c381a793773d2c1fc8e592a96bdfa7d5585b1a515d6a3b47f5dc0076a8c449
   languageName: node
   linkType: hard
 
@@ -1188,7 +1228,7 @@ __metadata:
   resolution: "app@workspace:app"
   dependencies:
     "@pulumi/cloudflare": "npm:^6.21.0"
-    "@pulumi/gcp": "npm:^9.0.0"
+    "@pulumi/gcp": "npm:^10.0.0"
     "@pulumi/pulumi": "npm:^3.150.0"
   languageName: unknown
   linkType: soft
@@ -1211,7 +1251,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "base@workspace:base"
   dependencies:
-    "@pulumi/gcp": "npm:^9.0.0"
+    "@pulumi/gcp": "npm:^10.0.0"
     "@pulumi/pulumi": "npm:^3.150.0"
   languageName: unknown
   linkType: soft
