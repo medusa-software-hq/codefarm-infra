@@ -55,7 +55,7 @@ runs:
         secrets: api-token:${{ inputs.cloudflare-api-token-secret }}
 
     - name: Run pulumi ${{ inputs.command }}
-      uses: pulumi/actions@v7.0.0
+      uses: pulumi/actions@v7.1.0
       env:
         # The state holds no secrets
         PULUMI_CONFIG_PASSPHRASE: ""
