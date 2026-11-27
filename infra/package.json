@@ -9,10 +9,10 @@
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.8",
     "@types/node": "^25.0.0",
-    "oxfmt": "^0.73.0",
+    "oxfmt": "^0.80.0",
     "oxlint": "^1.80.0",
     "oxlint-tsgolint": "^7.0.2003",
     "typescript": "^5.9.0"
   },
-  "packageManager": "yarn@4.18.1"
+  "packageManager": "yarn@4.19.0"
 }
